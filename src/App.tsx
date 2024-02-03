@@ -2,12 +2,14 @@ import React, { Component } from 'react';
 import DataStreamer, { ServerRespond } from './DataStreamer';
 import Graph from './Graph';
 import './App.css';
+import { setInterval } from 'timers';
 
 /**
  * State declaration for <App />
  */
 interface IState {
   data: ServerRespond[],
+  showGraph: boolean,     // Added showGrapgh as a property in preparation to add graph display functionality
 }
 
 /**
@@ -22,6 +24,7 @@ class App extends Component<{}, IState> {
       // data saves the server responds.
       // We use this state to parse data down to the child element (Graph) as element property
       data: [],
+      showGraph: false,     // Made showgraph initial state false until user clicks "Start Streaming Data"
     };
   }
 
@@ -29,18 +32,40 @@ class App extends Component<{}, IState> {
    * Render Graph react component with state.data parse as property data
    */
   renderGraph() {
-    return (<Graph data={this.state.data}/>)
+    if(this.state.showGraph){
+      return (<Graph data={this.state.data}/>)    // Modified to rendeer graph only when the `showGraph` property is `true`
+    }
   }
 
   /**
    * Get new data from server and update the state with the new data
+   * Added modifications to ensure data is retrrieved continously using the `setInterval` method
    */
   getDataFromServer() {
-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
-      // Update the state by creating a new array of data that consists of
-      // Previous data in the state and the new data from server
-      this.setState({ data: [...this.state.data, ...serverResponds] });
-    });
+    let x = 0;  // Counter to ensure to stop the interval process when necessary
+    const interval = setInterval(() => {      
+      DataStreamer.getData((serverResponds: ServerRespond[]) => {
+        // Update the state by creating a new array of data that consists of
+        // Previous data in the state and the new data from server
+
+        this.setState({
+          data: serverResponds,
+          showGraph: true,
+        });
+  
+        // this.setState({ data: [...this.state.data, ...serverResponds] });
+      });
+      
+      x++;
+
+      if(x > 1000){
+        clearInterval(interval);    // Stop the interval process once counter is over a 1000
+      }
+
+
+    },100);
+    
+    
   }
 
   /**
